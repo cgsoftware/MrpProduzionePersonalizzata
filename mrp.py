@@ -118,8 +118,15 @@ class mrp_product_produce(osv.osv_memory):
                             'production_id': production.id
                             }       
                    id_sched_sca = self.pool.get('mrp.production.product.line').create(cr, uid, riga)  
-
-
+        # import pdb;pdb.set_trace()
+        # qui modifica il carico della qta prodotta
+        production_order = self.pool.get('mrp.production').browse(cr, uid, context['active_id'], context=context)
+        product_qty_planned = production_order.product_qty
+        ok = self.pool.get('mrp.production').write(cr, uid, [production_order.id], {'product_qty':dati.product_qty, 'product_qty_planned':product_qty_planned})
+        for mov_mag_id in production_order.move_created_ids:
+            ok = self.pool.get('stock.move').write(cr, uid, [mov_mag_id.id], {'product_qty': dati.product_qty, })
+        
+        
         
        
         
@@ -151,5 +158,14 @@ class mrp_product_produce_consume(osv.osv_memory):
                 'product_qty_consume': fields.float('Quantità da Scaricare', required=True),
                 }
     
-mrp_product_produce_consume()    
+mrp_product_produce_consume()  
+
+class mrp_production(osv.osv):
+    _inherit = 'mrp.production' 
+                #Do not touch _name it must be same as _inherit
+                #_name = 'mrp.production' cr
+    _columns = {
+                'product_qty_planned': fields.float('Product Qty Planned', required=False, states={'draft':[('readonly', False)]}, readonly=True),
+                                }
+mrp_production()  
 
